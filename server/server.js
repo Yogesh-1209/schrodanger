@@ -6,15 +6,14 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
-connectDB();
-
 
 const app = express();
+const clientOrigin = process.env.CLIENT_URL || "http://localhost:5173";
 
 app.use(express.json());
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: clientOrigin,
     credentials: true
 }));
 
@@ -27,6 +26,16 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        process.exit(1);
+    }
+};
+
+startServer();
