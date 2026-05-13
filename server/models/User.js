@@ -21,7 +21,33 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
         default: ""
+    },
+     
+    bio: {
+    type: String,
+    default: ""
+    },
+
+    avatar: {
+    type: String,
+    default: ""
+    },
+
+    banner: {
+    type: String,
+    default: ""
+    },
+
+    steamId: {
+    type: String,
+    default: ""
+    },
+
+    favoriteGenres: {
+    type: [String],
+    default: []
     }
+
 }, {
     timestamps: true
 });
