@@ -3,7 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
+
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
 
@@ -19,6 +21,11 @@ app.use(cors({
 
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+
+app.get("/test", (req, res) => {
+    res.send("test route works");
+});
 
 app.get("/", (req, res) => {
     res.send("Server Running");
