@@ -54,7 +54,7 @@ function Signup() {
       }
 
       toast.success(data.message || "User registered");
-      navigate("/coming-soon");
+      navigate("/dashboard");
     } catch (error) {
       const message =
         error.response?.data?.message ||

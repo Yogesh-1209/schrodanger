@@ -45,7 +45,7 @@ function Signin() {
       }
 
       toast.success(data.message || "Login successful");
-      navigate("/coming-soon");
+      navigate("/dashboard");
     } catch (error) {
       const message =
         error.response?.data?.message ||
