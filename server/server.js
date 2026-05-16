@@ -6,7 +6,7 @@ import connectDB from "./config/db.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-
+import steamRoutes from "./routes/steamRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -22,6 +22,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/steam", steamRoutes);
 
 app.get("/test", (req, res) => {
     res.send("test route works");
