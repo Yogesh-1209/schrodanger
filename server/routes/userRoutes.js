@@ -1,6 +1,5 @@
 import express from "express";
 
-console.log("User routes loaded");
 import protect from "../middleware/authMiddleware.js";
 
 import {
