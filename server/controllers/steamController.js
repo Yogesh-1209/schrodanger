@@ -27,7 +27,7 @@ https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&stea
         const response = await axios.get(url);
 
         const games =
-            response.data.response.games || [];
+    (response.data.response.games || []).slice(0, 5);
 
         // loop through games
         for (const game of games) {
@@ -83,11 +83,12 @@ https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&stea
 
     } catch (error) {
 
-        console.log(error);
+    console.log(error);
 
-        res.status(500).json({
-            message: "Steam sync failed"
-        });
+    res.status(500).json({
+        error: error.message,
+        fullError: error
+    });
 
-    }
+}
 };

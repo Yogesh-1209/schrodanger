@@ -43,10 +43,38 @@ const userSchema = new mongoose.Schema({
     default: ""
     },
 
+    favoriteGames: [
+    {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Game"
+    }
+    ],
+
     favoriteGenres: {
     type: [String],
     default: []
-    }
+    },
+
+    followers: {
+    type: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }
+    ],
+    default: []
+},
+
+following: {
+    type: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }
+    ],
+    default: []
+},
+
 
 }, {
     timestamps: true
