@@ -1,14 +1,14 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import useFonts from "../hooks/useFonts";
+import { clearUserStorage } from "../utils/profileUtils";
 
 function DashboardLayout() {
   useFonts();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearUserStorage();
     navigate("/");
   };
 

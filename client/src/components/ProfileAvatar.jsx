@@ -1,10 +1,20 @@
-function ProfileAvatar({ name, size = "lg" }) {
+function ProfileAvatar({ name, avatar, size = "lg" }) {
   const sizeClasses =
     size === "lg"
       ? "-mt-12 h-20 w-20 sm:h-24 sm:w-24"
       : "h-12 w-12";
 
   const iconSize = size === "lg" ? "h-10 w-10 sm:h-12 sm:w-12" : "h-6 w-6";
+
+  if (avatar) {
+    return (
+      <img
+        src={avatar}
+        alt={name ? `${name}'s avatar` : "Profile avatar"}
+        className={`${sizeClasses} shrink-0 rounded-2xl border-4 border-[#151515] object-cover shadow-[0_0_24px_rgba(255,30,60,0.35)]`}
+      />
+    );
+  }
 
   return (
     <div

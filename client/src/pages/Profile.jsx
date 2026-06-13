@@ -1,40 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  achievements,
-  games,
-  gamingStats,
-  getGameThumb,
-  recentGames,
-  topGenres,
-  topGames,
-} from "../data/dummyData";
+import { achievements, gamingStats, getGameThumb, topGenres } from "../data/dummyData";
 import { useFavorites } from "../context/FavoritesContext";
+import { useGames } from "../context/GamesContext";
 import { useProfile } from "../context/ProfileContext";
 import GameCard from "../components/GameCard";
 import Modal from "../components/Modal";
 import ProfileAvatar from "../components/ProfileAvatar";
 
 function Profile() {
-  const { profile, platforms, updateProfile, togglePlatform } = useProfile();
-  const { favorites } = useFavorites();
+  const { profile, platforms, loading, saving, saveProfile, setSteamId } = useProfile();
+  const { favoriteGames, refreshFavorites } = useFavorites();
+  const { recentGames, topGames, stats, syncing, syncSteam } = useGames();
   const [editOpen, setEditOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [steamIdInput, setSteamIdInput] = useState("");
   const [draft, setDraft] = useState({
-    displayName: profile.displayName,
-    username: profile.username,
-    bio: profile.bio,
-    avatar: profile.avatar,
-    banner: profile.banner,
+    bio: "",
+    avatar: "",
+    banner: "",
   });
 
-  const favoriteGames = games.filter((g) => favorites.includes(g.id));
+  useEffect(() => {
+    setDraft({
+      bio: profile.bio,
+      avatar: profile.avatar,
+      banner: profile.banner,
+    });
+    setSteamIdInput(profile.steamId || "");
+  }, [profile]);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    updateProfile(draft);
-    setEditOpen(false);
-    toast.success("Profile updated");
+    try {
+      await saveProfile(draft);
+      setEditOpen(false);
+    } catch {
+      // toast handled in context
+    }
   };
 
   const handleShare = async () => {
@@ -47,6 +51,35 @@ function Profile() {
     }
   };
 
+  const handleSaveSteam = async () => {
+    try {
+      await setSteamId(steamIdInput.trim());
+      toast.success("Steam ID saved");
+    } catch {
+      // toast handled in context
+    }
+  };
+
+  const handleSyncSteam = async () => {
+    if (!profile.steamId && !steamIdInput.trim()) {
+      toast.error("Enter your Steam ID first");
+      return;
+    }
+    if (!profile.steamId && steamIdInput.trim()) {
+      await setSteamId(steamIdInput.trim());
+    }
+    try {
+      await syncSteam();
+      await refreshFavorites();
+    } catch {
+      // toast handled in context
+    }
+  };
+
+  if (loading) {
+    return <p className="text-center text-sm text-white/50 py-12">Loading profile...</p>;
+  }
+
   return (
     <div className="space-y-6">
       <section className="glass-card overflow-hidden rounded-3xl">
@@ -55,20 +88,26 @@ function Profile() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#151515] to-transparent" />
         </div>
         <div className="relative px-5 pb-5">
-          <ProfileAvatar name={profile.displayName} />
+          <ProfileAvatar name={profile.displayName} avatar={profile.avatar} />
           <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="font-display text-xl font-bold sm:text-2xl">{profile.displayName}</h1>
               <p className="text-sm text-[#FF1E3C]">@{profile.username}</p>
-              <p className="mt-2 max-w-xl text-sm text-white/55">{profile.bio}</p>
+              <p className="mt-2 max-w-xl text-sm text-white/55">{profile.bio || "No bio yet."}</p>
+              <div className="mt-3 flex gap-4 text-xs text-white/45">
+                <Link to={`/profile/${profile.username}`} className="hover:text-[#FF1E3C]">
+                  {profile.followerCount} followers
+                </Link>
+                <Link to={`/profile/${profile.username}`} className="hover:text-[#FF1E3C]">
+                  {profile.followingCount} following
+                </Link>
+              </div>
             </div>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setDraft({
-                    displayName: profile.displayName,
-                    username: profile.username,
                     bio: profile.bio,
                     avatar: profile.avatar,
                     banner: profile.banner,
@@ -93,10 +132,10 @@ function Profile() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Total Hours", value: `${profile.totalHours}h` },
+          { label: "Total Hours", value: `${stats.totalHours || profile.totalHours}h` },
           { label: "Achievements", value: profile.achievementCount },
-          { label: "Games", value: profile.gamesOwned },
-          { label: "Level", value: profile.level },
+          { label: "Games", value: stats.gamesOwned || profile.gamesOwned },
+          { label: "Followers", value: profile.followerCount },
         ].map((stat) => (
           <div key={stat.label} className="glass-card rounded-2xl p-4 text-center">
             <p className="text-xs text-white/40">{stat.label}</p>
@@ -120,37 +159,58 @@ function Profile() {
 
       <section>
         <h2 className="font-display mb-3 text-lg font-bold">Recently Played</h2>
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {recentGames.map((game) => (
-            <div key={game.id} className="min-w-[120px] shrink-0">
-              <img
-                src={game.cover}
-                alt={game.title}
-                loading="lazy"
-                className="h-36 w-[100px] rounded-xl object-cover"
-              />
-              <p className="mt-1 truncate text-xs font-medium">{game.title}</p>
-            </div>
-          ))}
-        </div>
+        {recentGames.length ? (
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {recentGames.map((game) => (
+              <div key={game.id} className="min-w-[120px] shrink-0">
+                <img
+                  src={getGameThumb(game)}
+                  alt={game.title}
+                  loading="lazy"
+                  className="h-36 w-[100px] rounded-xl object-cover"
+                />
+                <p className="mt-1 truncate text-xs font-medium">{game.title}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-white/45">
+            Sync your Steam library to see recently played games.
+          </p>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="glass-card rounded-2xl p-5">
           <h2 className="font-display mb-4 text-lg font-bold">Top Genres</h2>
-          <ul className="space-y-3">
-            {topGenres.map((g) => (
-              <li key={g.name}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span>{g.name}</span>
-                  <span className="text-white/45">{g.hours}h</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-[#FF1E3C]" style={{ width: `${g.percent}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {profile.favoriteGenres?.length ? (
+            <ul className="space-y-3">
+              {profile.favoriteGenres.map((name) => (
+                <li key={name}>
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span>{name}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-2/3 rounded-full bg-[#FF1E3C]" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="space-y-3">
+              {topGenres.map((g) => (
+                <li key={g.name}>
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span>{g.name}</span>
+                    <span className="text-white/45">{g.hours}h</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-[#FF1E3C]" style={{ width: `${g.percent}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="glass-card rounded-2xl p-5">
@@ -174,14 +234,18 @@ function Profile() {
             </div>
           </dl>
           <h3 className="font-display mt-6 mb-2 text-sm font-bold text-white/70">Top Played</h3>
-          <ul className="space-y-2">
-            {topGames.slice(0, 3).map((g) => (
-              <li key={g.id} className="flex justify-between text-sm">
-                <span>{g.title}</span>
-                <span className="text-white/45">{g.hoursPlayed}h</span>
-              </li>
-            ))}
-          </ul>
+          {topGames.length ? (
+            <ul className="space-y-2">
+              {topGames.slice(0, 3).map((g) => (
+                <li key={g.id} className="flex justify-between text-sm">
+                  <span>{g.title}</span>
+                  <span className="text-white/45">{g.hoursPlayed}h</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-white/45">Sync Steam to populate playtime stats.</p>
+          )}
         </div>
       </section>
 
@@ -226,9 +290,8 @@ function Profile() {
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
         <form className="space-y-4" onSubmit={handleSaveProfile}>
           {[
-            { name: "displayName", label: "Display Name" },
-            { name: "username", label: "Username" },
             { name: "bio", label: "Bio", multiline: true },
+            { name: "avatar", label: "Avatar URL" },
             { name: "banner", label: "Banner URL" },
           ].map((field) => (
             <div key={field.name}>
@@ -251,42 +314,57 @@ function Profile() {
           ))}
           <button
             type="submit"
-            className="w-full rounded-full bg-gradient-to-r from-[#FF1E3C] to-[#B3001B] py-3 text-sm font-semibold"
+            disabled={saving}
+            className="w-full rounded-full bg-gradient-to-r from-[#FF1E3C] to-[#B3001B] py-3 text-sm font-semibold disabled:opacity-70"
           >
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
       </Modal>
 
       <Modal open={connectOpen} onClose={() => setConnectOpen(false)} title="Connect Platforms">
         <p className="mb-4 text-sm text-white/50">
-          Link your accounts to sync libraries, achievements, and playtime.
+          Link your Steam account to sync your library and playtime.
         </p>
-        <ul className="space-y-2">
-          {platforms.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+        <div className="mb-4 space-y-2 rounded-xl border border-white/10 bg-white/5 p-4">
+          <label className="mb-1 block text-xs text-white/50">Steam ID (64-bit)</label>
+          <input
+            value={steamIdInput}
+            onChange={(e) => setSteamIdInput(e.target.value)}
+            placeholder="76561198..."
+            className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm"
+          />
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleSaveSteam}
+              disabled={saving}
+              className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold"
             >
-              <span className="font-medium">{p.name}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  togglePlatform(p.id);
-                  toast.success(
-                    p.connected ? `${p.name} disconnected` : `${p.name} connected`
-                  );
-                }}
-                className={`rounded-full px-4 py-1.5 text-xs font-semibold ${
-                  p.connected
-                    ? "border border-white/20 text-white/60"
-                    : "bg-[#FF1E3C] text-white"
-                }`}
+              Save Steam ID
+            </button>
+            <button
+              type="button"
+              onClick={handleSyncSteam}
+              disabled={syncing || saving}
+              className="rounded-full bg-[#FF1E3C] px-4 py-1.5 text-xs font-semibold disabled:opacity-70"
+            >
+              {syncing ? "Syncing..." : "Sync Steam Library"}
+            </button>
+          </div>
+        </div>
+        <ul className="space-y-2">
+          {platforms
+            .filter((p) => p.id !== "steam")
+            .map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 opacity-60"
               >
-                {p.connected ? "Disconnect" : "Connect"}
-              </button>
-            </li>
-          ))}
+                <span className="font-medium">{p.name}</span>
+                <span className="text-xs text-white/40">Coming soon</span>
+              </li>
+            ))}
         </ul>
       </Modal>
     </div>

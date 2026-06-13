@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearUserStorage } from "./profileUtils";
 
 export const backendUrl = (
   import.meta.env.VITE_API_BASE_URL ||
@@ -25,8 +26,7 @@ instance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.error("Unauthorized access - please login again");
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
+      clearUserStorage();
       window.location.href = "/signin";
     }
     return Promise.reject(error);

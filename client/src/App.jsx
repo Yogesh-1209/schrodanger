@@ -5,12 +5,15 @@ import Signin from "./pages/Signin";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import PublicProfile from "./pages/PublicProfile";
 import GameLibrary from "./pages/GameLibrary";
 import Sales from "./pages/Sales";
 import Achievements from "./pages/Achievements";
 import DashboardLayout from "./components/DashboardLayout";
+import LibraryBridge from "./components/LibraryBridge";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { FavoritesProvider } from "./context/FavoritesContext";
+import { GamesProvider } from "./context/GamesContext";
 import { ProfileProvider } from "./context/ProfileContext";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -23,14 +26,18 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/profile/:username" element={<PublicProfile />} />
           <Route path="/coming-soon" element={<Navigate to="/dashboard" replace />} />
           <Route
             element={
               <ProtectedRoute>
                 <ProfileProvider>
-                  <FavoritesProvider>
-                    <DashboardLayout />
-                  </FavoritesProvider>
+                  <GamesProvider>
+                    <FavoritesProvider>
+                      <LibraryBridge />
+                      <DashboardLayout />
+                    </FavoritesProvider>
+                  </GamesProvider>
                 </ProfileProvider>
               </ProtectedRoute>
             }

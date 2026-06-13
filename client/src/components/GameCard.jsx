@@ -2,7 +2,8 @@ import { useFavorites } from "../context/FavoritesContext";
 
 function GameCard({ game, compact = false, showPrice = false, owned = false }) {
   const { isFavorite, toggleFavorite } = useFavorites();
-  const fav = isFavorite(game.id);
+  const gameId = game._id || game.id;
+  const fav = isFavorite(gameId);
 
   return (
     <article className="glass-card group overflow-hidden rounded-2xl transition hover:border-[#FF1E3C]/25">
@@ -16,7 +17,7 @@ function GameCard({ game, compact = false, showPrice = false, owned = false }) {
         />
         <button
           type="button"
-          onClick={() => toggleFavorite(game.id)}
+          onClick={() => toggleFavorite(game)}
           className={`absolute right-2 top-2 rounded-full p-1.5 backdrop-blur-sm transition ${
             fav ? "bg-[#FF1E3C]/90 text-white" : "bg-black/50 text-white/70 hover:text-white"
           }`}

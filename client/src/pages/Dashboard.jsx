@@ -1,11 +1,6 @@
 import { Link } from "react-router-dom";
-import {
-  achievements,
-  getGameThumb,
-  recentGames,
-  topGames,
-  weeklyActivity,
-} from "../data/dummyData";
+import { achievements, getGameThumb, weeklyActivity } from "../data/dummyData";
+import { useGames } from "../context/GamesContext";
 import { useProfile } from "../context/ProfileContext";
 import GameCard from "../components/GameCard";
 
@@ -20,9 +15,14 @@ function StatCard({ label, value, sub }) {
 }
 
 function Dashboard() {
-  const { profile, platforms } = useProfile();
+  const { profile, platforms, loading } = useProfile();
+  const { recentGames, topGames, stats, syncing, syncSteam } = useGames();
   const connectedCount = platforms.filter((p) => p.connected).length;
   const maxHours = Math.max(...weeklyActivity.map((d) => d.hours));
+
+  if (loading) {
+    return <p className="text-center text-sm text-white/50 py-12">Loading dashboard...</p>;
+  }
 
   return (
     <div className="space-y-8">
@@ -30,18 +30,27 @@ function Dashboard() {
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-[#FF1E3C]/10 blur-3xl" />
         <p className="text-xs uppercase tracking-[0.3em] text-[#FF1E3C]/80">Dashboard</p>
         <h1 className="font-display mt-2 text-2xl font-bold sm:text-3xl">
-          Welcome back, {profile.displayName.split(" ")[0]}
+          Welcome back, {profile.displayName}
         </h1>
         <p className="mt-2 max-w-lg text-sm text-white/55">
-          Level {profile.level} · {profile.gamesOwned} games · {connectedCount} platforms linked
+          {stats.gamesOwned || profile.gamesOwned} games · {connectedCount} platforms linked ·{" "}
+          {profile.followerCount} followers
         </p>
+        {!profile.steamId && (
+          <Link
+            to="/profile"
+            className="mt-4 inline-block text-xs text-[#FF1E3C] hover:text-white"
+          >
+            Connect Steam to sync your library →
+          </Link>
+        )}
       </section>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total Hours" value={`${profile.totalHours}h`} sub="All platforms" />
+        <StatCard label="Total Hours" value={`${stats.totalHours}h`} sub="Synced games" />
         <StatCard label="Achievements" value={profile.achievementCount} sub="Unlocked trophies" />
-        <StatCard label="Games Owned" value={profile.gamesOwned} />
-        <StatCard label="Platforms" value={connectedCount} sub={`of ${platforms.length} available`} />
+        <StatCard label="Games Owned" value={stats.gamesOwned} />
+        <StatCard label="Followers" value={profile.followerCount} sub="Community" />
       </section>
 
       <section>
@@ -51,42 +60,62 @@ function Dashboard() {
             View library →
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {recentGames.map((game) => (
-            <GameCard key={game.id} game={game} compact />
-          ))}
-        </div>
+        {recentGames.length ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {recentGames.map((game) => (
+              <GameCard key={game.id} game={game} compact />
+            ))}
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl p-6 text-center">
+            <p className="text-sm text-white/45">No synced games yet.</p>
+            <button
+              type="button"
+              onClick={syncSteam}
+              disabled={syncing}
+              className="mt-3 rounded-full bg-[#FF1E3C] px-5 py-2 text-xs font-semibold disabled:opacity-70"
+            >
+              {syncing ? "Syncing..." : "Sync Steam Library"}
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="glass-card rounded-2xl p-5">
           <h2 className="font-display mb-4 text-lg font-bold">Top Played</h2>
-          <ul className="space-y-3">
-            {topGames.slice(0, 4).map((game, i) => (
-              <li key={game.id} className="flex items-center gap-3">
-                <span className="font-display w-5 text-sm text-[#FF1E3C]">{i + 1}</span>
-                <img
-                  src={getGameThumb(game)}
-                  alt={game.title}
-                  loading="lazy"
-                  className="h-9 w-16 shrink-0 rounded object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{game.title}</p>
-                  <p className="text-xs text-white/45">{game.hoursPlayed} hours</p>
-                </div>
-                <div
-                  className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10"
-                  title={`${game.hoursPlayed}h`}
-                >
-                  <div
-                    className="h-full rounded-full bg-[#FF1E3C]"
-                    style={{ width: `${(game.hoursPlayed / topGames[0].hoursPlayed) * 100}%` }}
+          {topGames.length ? (
+            <ul className="space-y-3">
+              {topGames.slice(0, 4).map((game, i) => (
+                <li key={game.id} className="flex items-center gap-3">
+                  <span className="font-display w-5 text-sm text-[#FF1E3C]">{i + 1}</span>
+                  <img
+                    src={getGameThumb(game)}
+                    alt={game.title}
+                    loading="lazy"
+                    className="h-9 w-16 shrink-0 rounded object-cover"
                   />
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{game.title}</p>
+                    <p className="text-xs text-white/45">{game.hoursPlayed} hours</p>
+                  </div>
+                  <div
+                    className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10"
+                    title={`${game.hoursPlayed}h`}
+                  >
+                    <div
+                      className="h-full rounded-full bg-[#FF1E3C]"
+                      style={{
+                        width: `${topGames[0]?.hoursPlayed ? (game.hoursPlayed / topGames[0].hoursPlayed) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-white/45">Sync Steam to see your top played games.</p>
+          )}
         </div>
 
         <div className="glass-card rounded-2xl p-5">
