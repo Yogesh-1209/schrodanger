@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { steamInputHint, normalizeSteamInput } from "../utils/steamUtils";
 import { achievements, gamingStats, getGameThumb, topGenres } from "../data/dummyData";
 import { useFavorites } from "../context/FavoritesContext";
 import { useGames } from "../context/GamesContext";
@@ -52,9 +53,15 @@ function Profile() {
   };
 
   const handleSaveSteam = async () => {
+    const value = normalizeSteamInput(steamIdInput);
+    if (!value) {
+      toast.error("Enter your Steam profile URL, custom name, or steamID64");
+      return;
+    }
+
     try {
-      await setSteamId(steamIdInput.trim());
-      toast.success("Steam ID saved");
+      await setSteamId(value);
+      toast.success("Steam account connected");
     } catch {
       // toast handled in context
     }
@@ -327,13 +334,28 @@ function Profile() {
           Link your Steam account to sync your library and playtime.
         </p>
         <div className="mb-4 space-y-2 rounded-xl border border-white/10 bg-white/5 p-4">
-          <label className="mb-1 block text-xs text-white/50">Steam ID (64-bit)</label>
+          <label className="mb-1 block text-xs text-white/50">
+            Steam profile URL, custom name, or steamID64
+          </label>
           <input
             value={steamIdInput}
             onChange={(e) => setSteamIdInput(e.target.value)}
             placeholder="76561198..."
             className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm"
           />
+          <p className="text-xs text-white/40">{steamInputHint(steamIdInput)}</p>
+          <p className="text-xs text-white/35">
+            Find your steamID64 at{" "}
+            <a
+              href="https://steamid.io"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#FF1E3C] hover:text-white"
+            >
+              steamid.io
+            </a>
+            . Set Steam game details to Public before syncing.
+          </p>
           <div className="flex gap-2 pt-2">
             <button
               type="button"

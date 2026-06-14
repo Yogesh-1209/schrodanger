@@ -7,14 +7,9 @@ import {
   useState,
 } from "react";
 import { toast } from "react-toastify";
-import { fetchFavoriteGames } from "../services/userApi";
+import { fetchMyGames } from "../services/userApi";
 import { syncSteamGames } from "../services/steamApi";
-import {
-  cacheGames,
-  getGameId,
-  loadCachedGames,
-  normalizeGame,
-} from "../utils/gameUtils";
+import { cacheGames, normalizeGame } from "../utils/gameUtils";
 
 const GamesContext = createContext(null);
 
@@ -35,27 +30,25 @@ export function GamesProvider({ children }) {
     return [...map.values()];
   }, []);
 
+  const applyLibrary = useCallback(
+    (libraryGames) => {
+      const merged = mergeGames([libraryGames]);
+      setGames(merged);
+      if (userId) cacheGames(userId, merged);
+      const totalHours = merged.reduce((sum, g) => sum + (g.hoursPlayed || 0), 0);
+      return { games: merged, totalHours, count: merged.length };
+    },
+    [mergeGames, userId]
+  );
+
   const refreshLibrary = useCallback(async () => {
-    const cached = loadCachedGames(userId);
-    let favorites = [];
-
     try {
-      favorites = await fetchFavoriteGames();
+      const libraryGames = await fetchMyGames();
+      return applyLibrary(libraryGames);
     } catch {
-      favorites = [];
+      return applyLibrary([]);
     }
-
-    const merged = mergeGames([
-      cached,
-      favorites.map(normalizeGame),
-    ]);
-
-    setGames(merged);
-    if (userId) cacheGames(userId, merged);
-
-    const totalHours = merged.reduce((sum, g) => sum + (g.hoursPlayed || 0), 0);
-    return { games: merged, totalHours, count: merged.length };
-  }, [mergeGames, userId]);
+  }, [applyLibrary]);
 
   useEffect(() => {
     let active = true;
@@ -78,19 +71,22 @@ export function GamesProvider({ children }) {
     try {
       const result = await syncSteamGames();
       setLastSync(result);
-      const { games: library, totalHours, count } = await refreshLibrary();
 
-      if (count === 0 && result.totalGames > 0) {
-        toast.success(
-          `Synced ${result.totalGames} Steam games to your account. Favorite them once they appear in your library.`
-        );
-      } else {
+      if (result.games?.length) {
+        const { games: library, totalHours, count } = applyLibrary(result.games);
         toast.success(
           result.message ||
             `Steam sync complete — ${result.totalGames ?? count} games`
         );
+        return { result, games: library, totalHours, count };
       }
 
+      const { games: library, totalHours, count } = await refreshLibrary();
+      toast.success(
+        result.totalGames > 0
+          ? `Synced ${result.totalGames} games`
+          : result.message || "Steam sync complete"
+      );
       return { result, games: library, totalHours, count };
     } catch (error) {
       const message =

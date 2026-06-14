@@ -110,7 +110,9 @@ export function ProfileProvider({ children }) {
       );
       return user;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to save Steam ID");
+      toast.error(
+        error.response?.data?.message || "Failed to save Steam ID"
+      );
       throw error;
     } finally {
       setSaving(false);

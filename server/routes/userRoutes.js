@@ -4,6 +4,7 @@ import protect from "../middleware/authMiddleware.js";
 
 import {
     getMyProfile,
+    getMyGames,
     updateProfile,
     getUserProfile
 } from "../controllers/userController.js";
@@ -26,58 +27,18 @@ from "../controllers/userController.js";
 const router = express.Router();
 
 router.get("/me", protect, getMyProfile);
-
+router.get("/me/games", protect, getMyGames);
 router.put("/me", protect, updateProfile);
 
+router.get("/favorites", protect, getFavoriteGames);
+router.post("/favorites", protect, addFavoriteGame);
+router.delete("/favorites/:gameId", protect, removeFavoriteGame);
+
+router.get("/followers/:id", getFollowers);
+router.get("/following/:id", getFollowing);
+router.post("/follow/:id", protect, followUser);
+router.post("/unfollow/:id", protect, unfollowUser);
+
 router.get("/:username", getUserProfile);
-
-// GET FAVORITES
-router.get(
-    "/favorites",
-    protect,
-    getFavoriteGames
-);
-
-// ADD FAVORITE
-router.post(
-    "/favorites",
-    protect,
-    addFavoriteGame
-);
-
-// REMOVE FAVORITE
-router.delete(
-    "/favorites/:gameId",
-    protect,
-    removeFavoriteGame
-);
-
-// FOLLOW USER
-router.post(
-    "/follow/:id",
-    protect,
-    followUser
-);
-
-// UNFOLLOW USER
-router.post(
-    "/unfollow/:id",
-    protect,
-    unfollowUser
-);
-
-// GET FOLLOWERS
-router.get(
-    "/followers/:id",
-    getFollowers
-);
-
-// GET FOLLOWING
-router.get(
-    "/following/:id",
-    getFollowing
-);
-
-
 
 export default router;

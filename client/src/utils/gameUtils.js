@@ -4,15 +4,16 @@ const steamCover = (appId) =>
 export function normalizeGame(game) {
   if (!game) return null;
 
-  const id = game._id || game.id;
-  const steamAppId = game.steamAppId;
-  const genres = game.genres || [];
   const platforms = game.platforms || game.platform || ["Steam"];
+  const gameDoc = game.gameId && typeof game.gameId === "object" ? game.gameId : game;
+  const id = gameDoc._id || game._id || game.id;
+  const steamAppId = gameDoc.steamAppId ?? game.steamAppId;
+  const genres = gameDoc.genres || game.genres || [];
 
   return {
     id,
     _id: id,
-    title: game.title || "Unknown Game",
+    title: gameDoc.title || game.title || "Unknown Game",
     steamAppId,
     cover:
       game.cover ||
@@ -20,7 +21,11 @@ export function normalizeGame(game) {
       (steamAppId ? steamCover(steamAppId) : ""),
     genre: game.genre || genres[0] || "Unknown",
     genres,
-    platform: Array.isArray(platforms) ? platforms : [platforms],
+    platform: Array.isArray(platforms)
+      ? platforms
+      : game.platform
+        ? [game.platform]
+        : ["Steam"],
     hoursPlayed: game.hoursPlayed ?? 0,
     lastPlayed: game.lastPlayed || game.updatedAt || new Date().toISOString(),
     price: game.price ?? 0,

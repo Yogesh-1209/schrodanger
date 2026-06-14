@@ -1,4 +1,6 @@
 import User from "../models/User.js";
+import UserGame from "../models/UserGame.js";
+import { resolveSteamId } from "../utils/steamUtils.js";
 
 
 // GET CURRENT LOGGED IN USER PROFILE
@@ -28,6 +30,41 @@ export const getMyProfile = async (req, res) => {
 };
 
 
+// GET CURRENT USER'S SYNCED GAME LIBRARY
+export const getMyGames = async (req, res) => {
+    try {
+        const userGames = await UserGame.find({
+            userId: req.user._id,
+        })
+            .populate("gameId")
+            .sort({ hoursPlayed: -1 });
+
+        const games = userGames
+            .filter((entry) => entry.gameId)
+            .map((entry) => ({
+                _id: entry.gameId._id,
+                title: entry.gameId.title,
+                steamAppId: entry.gameId.steamAppId,
+                coverImage: entry.gameId.coverImage,
+                genres: entry.gameId.genres,
+                platforms: entry.gameId.platforms,
+                hoursPlayed: entry.hoursPlayed,
+                platform: entry.platform,
+                lastPlayed: entry.lastPlayed || entry.updatedAt,
+                achievementsUnlocked: entry.achievementsUnlocked,
+            }));
+
+        res.status(200).json(games);
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            message: "Failed to fetch game library",
+        });
+    }
+};
+
+
 // UPDATE PROFILE
 export const updateProfile = async (req, res) => {
     try {
@@ -51,7 +88,23 @@ export const updateProfile = async (req, res) => {
         user.bio = bio || user.bio;
         user.avatar = avatar || user.avatar;
         user.banner = banner || user.banner;
-        user.steamId = steamId || user.steamId;
+
+        if (steamId !== undefined && steamId !== null && steamId !== "") {
+            const apiKey = process.env.STEAM_API_KEY;
+            if (!apiKey) {
+                return res.status(500).json({
+                    message: "STEAM_API_KEY is not configured on the server",
+                });
+            }
+
+            try {
+                user.steamId = await resolveSteamId(steamId, apiKey);
+            } catch (resolveError) {
+                return res.status(400).json({
+                    message: resolveError.message,
+                });
+            }
+        }
 
         if (favoriteGenres) {
             user.favoriteGenres = favoriteGenres;

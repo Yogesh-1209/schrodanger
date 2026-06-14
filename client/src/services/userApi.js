@@ -15,6 +15,11 @@ export async function fetchUserByUsername(username) {
   return data;
 }
 
+export async function fetchMyGames() {
+  const { data } = await api.get("/users/me/games");
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchFavoriteGames() {
   try {
     const { data } = await api.get("/users/favorites");
