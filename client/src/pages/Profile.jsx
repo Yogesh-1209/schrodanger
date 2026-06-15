@@ -52,6 +52,16 @@ function Profile() {
     }
   };
 
+  const handleCopyId = async () => {
+    if (!profile.id) return;
+    try {
+      await navigator.clipboard.writeText(profile.id);
+      toast.success("User ID copied");
+    } catch {
+      toast.info(profile.id);
+    }
+  };
+
   const handleSaveSteam = async () => {
     const value = normalizeSteamInput(steamIdInput);
     if (!value) {
@@ -100,6 +110,18 @@ function Profile() {
             <div>
               <h1 className="font-display text-xl font-bold sm:text-2xl">{profile.displayName}</h1>
               <p className="text-sm text-[#FF1E3C]">@{profile.username}</p>
+              <button
+                type="button"
+                onClick={handleCopyId}
+                className="mt-1 flex items-center gap-1.5 font-mono text-[10px] text-white/35 transition hover:text-[#FF1E3C]"
+                title="Copy user ID"
+              >
+                ID: {profile.id}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </button>
               <p className="mt-2 max-w-xl text-sm text-white/55">{profile.bio || "No bio yet."}</p>
               <div className="mt-3 flex gap-4 text-xs text-white/45">
                 <Link to={`/profile/${profile.username}`} className="hover:text-[#FF1E3C]">

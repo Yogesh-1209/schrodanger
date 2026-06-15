@@ -11,6 +11,25 @@ const navItems = [
     ),
   },
   {
+    to: "/messages",
+    label: "Messages",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    to: "/discover",
+    label: "Discover",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M20 20l-3-3" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     to: "/library",
     label: "Library",
     icon: (

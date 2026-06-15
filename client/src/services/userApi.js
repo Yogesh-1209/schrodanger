@@ -64,3 +64,13 @@ export async function fetchFollowing(userId) {
   const { data } = await api.get(`/users/following/${userId}`);
   return data;
 }
+
+export async function searchUsers(query) {
+  const { data } = await api.get(`/users/search/${encodeURIComponent(query)}`);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchDiscoverUsers() {
+  const { data } = await api.get("/users/discover");
+  return Array.isArray(data) ? data : [];
+}

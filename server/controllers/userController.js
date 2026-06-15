@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import UserGame from "../models/UserGame.js";
+import mongoose from "mongoose";
 import { resolveSteamId } from "../utils/steamUtils.js";
 
 
@@ -132,6 +133,91 @@ export const updateProfile = async (req, res) => {
 
         res.status(500).json({
             message: "Server Error"
+        });
+
+    }
+};
+
+
+// SEARCH USERS BY ID OR USERNAME
+export const searchUsers = async (req, res) => {
+    try {
+        const query = req.params.q?.trim();
+
+        if (!query) {
+            return res.status(400).json({
+                message: "Search query required"
+            });
+        }
+
+        const currentUserId = req.user._id;
+        const userFields = "username avatar";
+        let users = [];
+
+        const isObjectId =
+            mongoose.Types.ObjectId.isValid(query) && query.length === 24;
+
+        if (isObjectId) {
+            const user = await User.findById(query).select(userFields);
+            if (user && user._id.toString() !== currentUserId.toString()) {
+                users = [user];
+            }
+        } else {
+            users = await User.find({
+                username: { $regex: query, $options: "i" },
+                _id: { $ne: currentUserId }
+            })
+                .select(userFields)
+                .limit(10);
+        }
+
+        res.status(200).json(users);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Search failed"
+        });
+
+    }
+};
+
+
+// GET USERS TO DISCOVER (NOT SELF, NOT ALREADY FOLLOWING)
+export const getDiscoverUsers = async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.user._id).select("following");
+
+        const excludeIds = [
+            req.user._id,
+            ...(currentUser?.following || [])
+        ];
+
+        const users = await User.find({
+            _id: { $nin: excludeIds }
+        })
+            .select("username avatar bio followers")
+            .sort({ createdAt: -1 })
+            .limit(24);
+
+        res.status(200).json(
+            users.map((user) => ({
+                _id: user._id,
+                username: user.username,
+                avatar: user.avatar,
+                bio: user.bio,
+                followerCount: user.followers?.length || 0
+            }))
+        );
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Failed to load users"
         });
 
     }

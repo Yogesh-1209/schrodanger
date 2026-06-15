@@ -9,12 +9,15 @@ import PublicProfile from "./pages/PublicProfile";
 import GameLibrary from "./pages/GameLibrary";
 import Sales from "./pages/Sales";
 import Achievements from "./pages/Achievements";
+import Messages from "./pages/Messages";
+import Discover from "./pages/Discover";
 import DashboardLayout from "./components/DashboardLayout";
 import LibraryBridge from "./components/LibraryBridge";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { GamesProvider } from "./context/GamesContext";
 import { ProfileProvider } from "./context/ProfileContext";
+import { SocketProvider } from "./context/SocketContext";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
@@ -32,17 +35,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfileProvider>
-                  <GamesProvider>
-                    <FavoritesProvider>
-                      <LibraryBridge />
-                      <DashboardLayout />
-                    </FavoritesProvider>
-                  </GamesProvider>
+                  <SocketProvider>
+                    <GamesProvider>
+                      <FavoritesProvider>
+                        <LibraryBridge />
+                        <DashboardLayout />
+                      </FavoritesProvider>
+                    </GamesProvider>
+                  </SocketProvider>
                 </ProfileProvider>
               </ProtectedRoute>
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:userId" element={<Messages />} />
+            <Route path="/discover" element={<Discover />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/library" element={<GameLibrary />} />
             <Route path="/sales" element={<Sales />} />
