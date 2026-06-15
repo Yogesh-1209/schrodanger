@@ -3,6 +3,7 @@ import { achievements, getGameThumb, weeklyActivity } from "../data/dummyData";
 import { useGames } from "../context/GamesContext";
 import { useProfile } from "../context/ProfileContext";
 import GameCard from "../components/GameCard";
+import FollowCountButtons from "../components/FollowCountButtons";
 
 function StatCard({ label, value, sub }) {
   return (
@@ -33,9 +34,14 @@ function Dashboard() {
           Welcome back, {profile.displayName}
         </h1>
         <p className="mt-2 max-w-lg text-sm text-white/55">
-          {stats.gamesOwned || profile.gamesOwned} games · {connectedCount} platforms linked ·{" "}
-          {profile.followerCount} followers
+          {stats.gamesOwned || profile.gamesOwned} games · {connectedCount} platforms linked
         </p>
+        <FollowCountButtons
+          userId={profile.id}
+          followerCount={profile.followerCount}
+          followingCount={profile.followingCount}
+          className="mt-2"
+        />
         {!profile.steamId && (
           <Link
             to="/profile"

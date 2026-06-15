@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  fetchFollowers,
-  fetchFollowing,
   fetchMyProfile,
   fetchUserByUsername,
   followUser,
@@ -11,7 +9,7 @@ import {
 } from "../services/userApi";
 import { mapUserToProfile } from "../utils/profileUtils";
 import ProfileAvatar from "../components/ProfileAvatar";
-import Modal from "../components/Modal";
+import FollowCountButtons from "../components/FollowCountButtons";
 
 function PublicProfile() {
   const { username } = useParams();
@@ -23,9 +21,6 @@ function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [followers, setFollowers] = useState([]);
-  const [followingList, setFollowingList] = useState([]);
-  const [listOpen, setListOpen] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -113,22 +108,6 @@ function PublicProfile() {
     }
   };
 
-  const openList = async (type) => {
-    if (!profile?.id) return;
-    setListOpen(type);
-    try {
-      if (type === "followers") {
-        const data = await fetchFollowers(profile.id);
-        setFollowers(data);
-      } else {
-        const data = await fetchFollowing(profile.id);
-        setFollowingList(data);
-      }
-    } catch {
-      toast.error(`Failed to load ${type}`);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A] text-white">
@@ -138,9 +117,6 @@ function PublicProfile() {
   }
 
   if (!profile) return null;
-
-  const listData = listOpen === "followers" ? followers : followingList;
-  const listTitle = listOpen === "followers" ? "Followers" : "Following";
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -186,22 +162,12 @@ function PublicProfile() {
                   </svg>
                 </button>
                 <p className="mt-2 max-w-xl text-sm text-white/55">{profile.bio || "No bio yet."}</p>
-                <div className="mt-3 flex gap-4 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => openList("followers")}
-                    className="text-white/45 hover:text-[#FF1E3C]"
-                  >
-                    <span className="font-semibold text-white">{profile.followerCount}</span> followers
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openList("following")}
-                    className="text-white/45 hover:text-[#FF1E3C]"
-                  >
-                    <span className="font-semibold text-white">{profile.followingCount}</span> following
-                  </button>
-                </div>
+                <FollowCountButtons
+                  userId={profile.id}
+                  followerCount={profile.followerCount}
+                  followingCount={profile.followingCount}
+                  className="mt-3"
+                />
               </div>
               <div className="flex gap-2">
                 {token && (
@@ -233,31 +199,6 @@ function PublicProfile() {
           <p className="text-center text-xs text-white/40">Steam connected</p>
         )}
       </main>
-
-      <Modal open={Boolean(listOpen)} onClose={() => setListOpen(null)} title={listTitle}>
-        {listData.length === 0 ? (
-          <p className="text-sm text-white/45">No users yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {listData.map((user) => (
-              <li key={user._id}>
-                <Link
-                  to={`/profile/${user.username}`}
-                  onClick={() => setListOpen(null)}
-                  className="flex items-center gap-3 rounded-xl bg-white/5 p-3 transition hover:bg-white/10"
-                >
-                  <ProfileAvatar
-                    name={user.username}
-                    avatar={user.avatar}
-                    size="sm"
-                  />
-                  <span className="text-sm font-medium">@{user.username}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Modal>
     </div>
   );
 }

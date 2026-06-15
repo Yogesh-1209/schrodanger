@@ -7,6 +7,10 @@ import { useFavorites } from "../context/FavoritesContext";
 import { useGames } from "../context/GamesContext";
 import { useProfile } from "../context/ProfileContext";
 import GameCard from "../components/GameCard";
+import FollowCountButtons, {
+  FollowListModal,
+  useFollowList,
+} from "../components/FollowCountButtons";
 import Modal from "../components/Modal";
 import ProfileAvatar from "../components/ProfileAvatar";
 
@@ -22,6 +26,8 @@ function Profile() {
     avatar: "",
     banner: "",
   });
+
+  const followList = useFollowList(profile.id);
 
   useEffect(() => {
     setDraft({
@@ -123,14 +129,13 @@ function Profile() {
                 </svg>
               </button>
               <p className="mt-2 max-w-xl text-sm text-white/55">{profile.bio || "No bio yet."}</p>
-              <div className="mt-3 flex gap-4 text-xs text-white/45">
-                <Link to={`/profile/${profile.username}`} className="hover:text-[#FF1E3C]">
-                  {profile.followerCount} followers
-                </Link>
-                <Link to={`/profile/${profile.username}`} className="hover:text-[#FF1E3C]">
-                  {profile.followingCount} following
-                </Link>
-              </div>
+              <FollowCountButtons
+                userId={profile.id}
+                followerCount={profile.followerCount}
+                followingCount={profile.followingCount}
+                className="mt-3"
+                followList={followList}
+              />
             </div>
             <div className="flex gap-2">
               <button
@@ -159,19 +164,47 @@ function Profile() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           { label: "Total Hours", value: `${stats.totalHours || profile.totalHours}h` },
           { label: "Achievements", value: profile.achievementCount },
           { label: "Games", value: stats.gamesOwned || profile.gamesOwned },
-          { label: "Followers", value: profile.followerCount },
-        ].map((stat) => (
-          <div key={stat.label} className="glass-card rounded-2xl p-4 text-center">
-            <p className="text-xs text-white/40">{stat.label}</p>
-            <p className="font-display mt-1 text-xl font-bold">{stat.value}</p>
-          </div>
-        ))}
+          {
+            label: "Followers",
+            value: profile.followerCount,
+            listType: "followers",
+          },
+          {
+            label: "Following",
+            value: profile.followingCount,
+            listType: "following",
+          },
+        ].map((stat) =>
+          stat.listType ? (
+            <button
+              key={stat.label}
+              type="button"
+              onClick={() => followList.openList(stat.listType)}
+              className="glass-card rounded-2xl p-4 text-center transition hover:border-[#FF1E3C]/30 hover:bg-white/[0.03]"
+            >
+              <p className="text-xs text-white/40">{stat.label}</p>
+              <p className="font-display mt-1 text-xl font-bold">{stat.value}</p>
+            </button>
+          ) : (
+            <div key={stat.label} className="glass-card rounded-2xl p-4 text-center">
+              <p className="text-xs text-white/40">{stat.label}</p>
+              <p className="font-display mt-1 text-xl font-bold">{stat.value}</p>
+            </div>
+          )
+        )}
       </section>
+
+      <FollowListModal
+        listOpen={followList.listOpen}
+        setListOpen={followList.setListOpen}
+        listData={followList.listData}
+        listTitle={followList.listTitle}
+      />
 
       <section>
         <h2 className="font-display mb-3 text-lg font-bold">Favorite Games</h2>
